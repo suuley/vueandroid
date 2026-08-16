@@ -1,0 +1,11 @@
+# Dependencies
+node_modules/
+
+# Environment variables (Never push your actual secrets!)
+.env
+.env.local
+.env.*.local
+
+# Build output
+dist/
+.vercel
