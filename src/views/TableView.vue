@@ -19,7 +19,7 @@ const formatMoney = (n) => '$' + Number(n || 0).toFixed(2)
 const getPlaceholder = () => 'data:image/svg+xml;utf8,' + encodeURIComponent(
   '<svg xmlns="http://www.w3.org/2000/svg" width="64" height="48"><rect width="100%" height="100%" fill="#e5e7eb"/><text x="50%" y="50%" font-size="24" text-anchor="middle" dominant-baseline="middle">🛺</text></svg>')
 
-/* register form above the table */
+/* ---------- register form above the table ---------- */
 const reg = ref({ licensePlate: '', ownerName: '', payment: '', image: '' })
 const previewUrl = ref('')
 const regError = ref('')
@@ -54,7 +54,7 @@ async function registerVehicle(e) {
   await load()
 }
 
-/* inline pay */
+/* ---------- inline pay ---------- */
 const payingPlate = ref(null)
 const payAmount = ref('')
 async function submitPay(plate) {
@@ -69,7 +69,29 @@ async function submitPay(plate) {
   await load()
 }
 
-/* delete */
+/* ---------- inline edit (owner name) ---------- */
+const editingPlate = ref(null)
+const editOwner = ref('')
+function startEdit(v) {
+  editingPlate.value = v.licensePlate
+  editOwner.value = v.ownerName
+}
+function cancelEdit() {
+  editingPlate.value = null
+  editOwner.value = ''
+}
+async function saveEdit(plate) {
+  if (!editOwner.value.trim()) return
+  const v = await getVehicle(plate)
+  if (!v) return
+  v.ownerName = editOwner.value.trim()
+  await saveVehicle(v)
+  editingPlate.value = null
+  editOwner.value = ''
+  await load()
+}
+
+/* ---------- delete ---------- */
 async function removeVehicle(plate) {
   if (!confirm('Delete ' + plate + '? This cannot be undone.')) return
   await deleteVehicle(plate)
@@ -82,7 +104,7 @@ async function removeVehicle(plate) {
     <header>
       <div class="logo">🛺</div>
       <h1>Vehicle Dashboard</h1>
-      <p class="rate">Register above · pay, delete or view in one place</p>
+      <p class="rate">Register above · pay, edit or delete in one place</p>
     </header>
 
     <form class="reg-inline" @submit="registerVehicle">
@@ -105,20 +127,31 @@ async function removeVehicle(plate) {
           <tr v-for="v in vehicles" :key="v.licensePlate">
             <td><img class="thumb" :src="v.image || getPlaceholder()" alt=""></td>
             <td class="plate">{{ v.licensePlate }}</td>
-            <td>{{ v.ownerName }}</td>
+
+            <td>
+              <input v-if="editingPlate === v.licensePlate" v-model="editOwner" type="text" class="edit-input">
+              <span v-else>{{ v.ownerName }}</span>
+            </td>
+
             <td>{{ formatMoney(chargeOf(v)) }}</td>
             <td>{{ formatMoney(v.payment) }}</td>
             <td :class="balanceOf(v) > 0 ? 'owed' : 'credit'">{{ formatMoney(balanceOf(v)) }}</td>
+
             <td>
               <div v-if="payingPlate === v.licensePlate" class="pay-inline">
                 <input v-model="payAmount" type="number" min="0.01" step="0.01" placeholder="$">
                 <button class="btn pay" @click="submitPay(v.licensePlate)">✓</button>
                 <button class="btn cancel" @click="payingPlate = null">✕</button>
               </div>
+              <div v-else-if="editingPlate === v.licensePlate" class="row-btns">
+                <button class="btn save" @click="saveEdit(v.licensePlate)">✓ Save</button>
+                <button class="btn cancel" @click="cancelEdit">✕</button>
+              </div>
               <div v-else class="row-btns">
                 <button class="btn pay" @click="payingPlate = v.licensePlate; payAmount = ''">💳 Pay</button>
+                <button class="btn edit" @click="startEdit(v)">✏️ Edit</button>
                 <button class="btn del" @click="removeVehicle(v.licensePlate)">🗑 Delete</button>
-                <router-link class="btn view" :to="{ path: '/', query: { plate: v.licensePlate } }">👁 View</router-link>
+                <router-link class="btn view" :to="{ path: '/', query: { plate: v.licensePlate } }">👁</router-link>
               </div>
             </td>
           </tr>
@@ -148,7 +181,13 @@ td { padding: 10px; border-bottom: 1px solid #f3f4f6; vertical-align: middle; }
 .empty { text-align: center; color: #6b7280; padding: 24px; }
 .row-btns { display: flex; gap: 6px; flex-wrap: wrap; }
 .btn { border: none; border-radius: 8px; padding: 7px 10px; font-size: 12px; font-weight: 600; cursor: pointer; text-decoration: none; color: #fff; }
-.btn.pay { background: #2563eb; } .btn.del { background: #dc2626; } .btn.view { background: #f59e0b; } .btn.cancel { background: #6b7280; }
+.btn.pay { background: #2563eb; }
+.btn.edit { background: #7c3aed; }
+.btn.save { background: #16a34a; }
+.btn.del { background: #dc2626; }
+.btn.view { background: #f59e0b; }
+.btn.cancel { background: #6b7280; }
 .pay-inline { display: flex; gap: 6px; }
 .pay-inline input { width: 90px; padding: 6px 8px; border: 2px solid #d1d5db; border-radius: 8px; }
+.edit-input { width: 100%; padding: 6px 8px; border: 2px solid #7c3aed; border-radius: 8px; font-size: 14px; }
 </style>

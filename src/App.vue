@@ -2,8 +2,6 @@
   <nav class="topnav">
     <router-link to="/" class="nav-link">🔍 Search</router-link>
     <router-link to="/table" class="nav-link">📋 Dashboard</router-link>
-    <router-link to="/register" class="nav-link">➕ Register</router-link>
-    <router-link to="/payment" class="nav-link">💳 Payment</router-link>
   </nav>
   <router-view />
 </template>
